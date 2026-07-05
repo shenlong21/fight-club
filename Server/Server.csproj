@@ -1,13 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- WebTransport over HTTP/3 is a PREVIEW feature in Kestrel as of .NET
+         8/9/10. Both of these switches are required or Kestrel will silently
+         refuse WebTransport sessions. See ARCHITECTURE.md for the current
+         state of this feature and why the server also keeps a WebSocket
+         fallback path (WebTransportPlayerConnection vs
+         WebSocketPlayerConnection under Networking/). -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption
+      Include="Microsoft.AspNetCore.Server.Kestrel.Experimental.WebTransportAndH3Datagrams"
+      Value="true" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\CombatCore\CombatCore.csproj" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
 
 </Project>

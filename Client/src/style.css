@@ -1,0 +1,61 @@
+html, body {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+}
+
+#renderCanvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  font-family: system-ui, sans-serif;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.healthBar {
+  flex: 1;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #666;
+  overflow: hidden;
+}
+
+.healthBar__fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.1s linear;
+}
+
+.healthBar--p1 .healthBar__fill {
+  background: #d43030;
+  margin-left: auto; /* drains from the outer edge toward the center, like a classic fighter HUD */
+}
+
+.healthBar--p2 .healthBar__fill {
+  background: #3060d4;
+}
+
+.status {
+  flex-shrink: 0;
+  min-width: 220px;
+  text-align: center;
+  color: #eee;
+  font-size: 18px;
+  font-weight: 600;
+  text-shadow: 0 1px 3px black;
+}

@@ -39,7 +39,7 @@ public partial class WasmInterop
         var p1 = new PlayerInput((sbyte)p1MoveX, (sbyte)p1MoveZ, (InputButtons)p1Buttons);
         var p2 = new PlayerInput((sbyte)p2MoveX, (sbyte)p2MoveZ, (InputButtons)p2Buttons);
 
-        CombatSimulation.Tick(ref _currentState, p1, p2);
+        _currentState = CombatSimulation.Tick(in _currentState, p1, p2);
         
         NetCodec.Encode(in _currentState, _outBuffer);
         return _outBuffer; // Marshals to a JS Uint8Array

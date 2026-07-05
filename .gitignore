@@ -18,6 +18,11 @@ yarn-error.log*
 *.suo
 .vs/
 
+# Local dev certs (never commit private keys) and scratch test folders
+*.pfx
+*.der
+.scratch/
+
 # Windows
 Thumbs.db
 Thumbs.db:encryptable

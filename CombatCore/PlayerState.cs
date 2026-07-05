@@ -21,6 +21,10 @@ public struct PlayerState
 
     public bool IsHoldingBlock;
     public bool IsBeastForm;
+
+    // Prevents a single multi-frame active hitbox window (e.g. HeavyPunch's
+    // 4-frame active window) from registering as 4 separate hits against the
+    // same activation. Reset to false whenever a new attack move starts.
     public bool HasCurrentAttackConnected;
 
     public static PlayerState CreateDefault(FixedVector3 startPosition, int facingSign, int maxHealth = 100)
