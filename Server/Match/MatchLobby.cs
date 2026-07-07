@@ -44,7 +44,16 @@ public sealed class MatchLobby
             }
         }
 
-        if (created is not null) _active[created.MatchId] = created;
+        if (created is not null)
+        {
+            _active[created.MatchId] = created;
+            // Fire-and-forget: a one-time, best-effort informational message.
+            // Worst case if it's lost is the client never learns its slot and
+            // falls back to non-predicted rendering (see PredictedMatch.ts) -
+            // not worth blocking match creation on, or plumbing a logger into
+            // MatchLobby for.
+            _ = created.SendPlayerAssignmentsAsync();
+        }
     }
 
     public void Remove(MatchSession session) => _active.TryRemove(session.MatchId, out _);

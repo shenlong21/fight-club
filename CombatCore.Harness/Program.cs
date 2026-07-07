@@ -18,10 +18,11 @@ List<(PlayerInput p1, PlayerInput p2)> BuildHeavyPunchScript()
     // 40 ticks of P1 walking toward P2 (P2 stands still).
     for (int i = 0; i < 40; i++)
         script.Add((new PlayerInput(1, 0, InputButtons.None), PlayerInput.None));
-    // Trigger HeavyPunch (Punch+Kick per this slice's mapping), then let it
-    // play out untouched - StepPlayer ignores input entirely once a
-    // non-cancelable attack is committed, so PlayerInput.None is correct here.
-    script.Add((new PlayerInput(0, 0, InputButtons.Punch | InputButtons.Kick), PlayerInput.None));
+    // Trigger HeavyPunch (Kick alone - it's an independent attack, not a
+    // Punch+Kick combo, see CombatSimulation.cs), then let it play out
+    // untouched - StepPlayer ignores input entirely once a non-cancelable
+    // attack is committed, so PlayerInput.None is correct here.
+    script.Add((new PlayerInput(0, 0, InputButtons.Kick), PlayerInput.None));
     for (int i = 0; i < 40; i++)
         script.Add((PlayerInput.None, PlayerInput.None));
     return script;

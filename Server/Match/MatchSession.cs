@@ -46,6 +46,21 @@ public sealed class MatchSession
     }
 
     /// <summary>
+    /// Tells each connection which PlayerState slot is theirs (1 or 2, as a
+    /// single raw byte - not a MatchState broadcast, distinguished purely by
+    /// length on the client). The wire protocol otherwise never says this:
+    /// MatchState is symmetric, and the client needs to know which half of
+    /// it to predict locally versus just render from the server (see
+    /// Client/src/game/PredictedMatch.ts). Sent once, right when the match
+    /// is created, before any tick broadcasts - so it isn't tied to
+    /// TickAsync and doesn't need to be re-sent.
+    /// </summary>
+    public Task SendPlayerAssignmentsAsync(CancellationToken ct = default) =>
+        Task.WhenAll(
+            Player1Connection.SendReliableAsync(new byte[] { 1 }, ct),
+            Player2Connection.SendReliableAsync(new byte[] { 2 }, ct));
+
+    /// <summary>
     /// Advances the match by exactly one 16.6ms frame using whatever real or
     /// predicted input each player's history has for the frame about to be
     /// simulated, then broadcasts the resulting confirmed state to both

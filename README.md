@@ -1,4 +1,4 @@
-npm run dev -- --host# Fight Club
+# Fight Club
 
 A web-based, 3D fighting game (Bloody Roar 2 style) built on a deterministic,
 rollback-friendly combat simulation shared between a .NET server and a
@@ -34,7 +34,16 @@ cd Client && npm run dev
 Running the server with no extra configuration binds a plain HTTPS endpoint
 using the standard ASP.NET Core dev certificate - enough for the WebSocket
 fallback path and for browsing the site over HTTPS. **WebTransport needs one
-extra step**, covered below.
+extra step**, covered below - and **testing from another machine on your
+network needs a different one**, covered in "LAN testing" further down.
+
+By default Vite's dev server only binds `localhost`, so another machine on
+your network can't reach it even once the game server itself is reachable.
+Run it with `--host` to bind all interfaces:
+
+```
+cd Client && npm run dev -- --host
+```
 
 ## Local HTTPS / HTTP-3 / WebTransport certificate setup
 
@@ -131,3 +140,96 @@ const hash = createHash("sha256").update(readFileSync("./wt-dev-cert.der")).dige
   step 3), send a few input frames, and confirm both receive `MatchState`
   broadcasts (`NetCodec.WireSize` = 57 bytes each) at ~60Hz once
   `MatchLobby` pairs them.
+
+## LAN testing (playing from a second machine)
+
+Three separate things have to be true for a second machine on your network to
+connect, and it's easy to fix only one and still see a failure:
+
+1. **The server has to listen on your network interface, not just loopback.**
+   `Server/Program.cs` binds with `ListenAnyIP`, so this is already handled -
+   just confirm you don't see "Now listening on: https://localhost:5252"
+   (loopback-only); it should say `https://[::]:5252` or similar.
+2. **The client has to connect to the host's address, not "localhost."**
+   `Client/src/main.ts` builds the server URL from `window.location.hostname`
+   automatically, so as long as the other machine loads the page via your
+   machine's actual IP/hostname (e.g. `http://192.168.1.2:5173`, not
+   `http://localhost:5173`), this is already handled too.
+3. **The other machine's browser has to trust the server's certificate for
+   that address.** This is the one that needs manual setup, covered below -
+   the standard `dotnet dev-certs` certificate is issued for `localhost` only,
+   so it fails TLS validation for a LAN IP even after (1) and (2) are fixed.
+   A failure here shows up as a generic `WebSocket connection to '...' failed`
+   in the browser console, with no other detail.
+
+### Generate a certificate that covers your LAN IP/hostname
+
+```powershell
+$san = "2.5.29.17={text}DNS=localhost&DNS=<YOUR-HOSTNAME>&IPAddress=<YOUR-LAN-IP>&IPAddress=127.0.0.1"
+
+$cert = New-SelfSignedCertificate `
+  -Subject "CN=fight-club-lan-dev" `
+  -CertStoreLocation "Cert:\CurrentUser\My" `
+  -NotAfter (Get-Date).AddYears(2) `
+  -KeyAlgorithm ECDSA_nistP256 `
+  -KeyUsage DigitalSignature `
+  -TextExtension @($san, "2.5.29.37={text}1.3.6.1.5.5.7.3.1")
+
+$pwd = ConvertTo-SecureString -String "devpass123" -Force -AsPlainText
+Export-PfxCertificate -Cert $cert -FilePath "Server/lan-dev-cert.pfx" -Password $pwd | Out-Null
+Export-Certificate -Cert $cert -FilePath "lan-dev-cert.cer" | Out-Null
+```
+
+Find your LAN IP with `Get-NetIPAddress -AddressFamily IPv4` (look for your
+Wi-Fi/Ethernet adapter, not `127.0.0.1`/`169.254.*`) and your hostname with
+`$env:COMPUTERNAME`. Unlike the WebTransport cert above, there's no
+short-validity/ECDSA-only constraint here (that's specific to
+`serverCertificateHashes` pinning) - this is a normal, long-lived cert, it
+just needs the right names in it. `*.pfx` and `*.cer` are git-ignored -
+never commit certificate material.
+
+Run the server with it:
+
+```
+cd Server
+dotnet run --Kestrel:CertPath=lan-dev-cert.pfx --Kestrel:CertPassword=devpass123
+```
+
+### Trust it - on both machines
+
+**On this machine** (so you can also browse via your own LAN IP):
+
+```powershell
+$certBytes = [System.IO.File]::ReadAllBytes("lan-dev-cert.cer")
+$cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes)
+$store = [System.Security.Cryptography.X509Certificates.X509Store]::new("Root", "CurrentUser")
+$store.Open("ReadWrite")
+$store.Add($cert)
+$store.Close()
+```
+
+(`Import-Certificate` into the Root store can fail with "UI is not allowed in
+this operation" from a non-interactive shell - the `X509Store` API above
+doesn't have that restriction for `CurrentUser\Root`.)
+
+**On the other machine**: copy `lan-dev-cert.cer` over (it's the public
+certificate only, no private key - safe to send) and import it into
+**Trusted Root Certification Authorities**:
+
+- Windows: double-click the `.cer` → **Install Certificate** → **Local
+  Machine** (or Current User) → "Place all certificates in the following
+  store" → **Trusted Root Certification Authorities**.
+- macOS: open the `.cer` in **Keychain Access**, add to the **System**
+  keychain, then double-click it → **Trust** → "Always Trust".
+- Linux (Chrome/Chromium via NSS): `certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n fight-club-lan-dev -i lan-dev-cert.cer`
+
+After that, `https://<your-lan-ip>:5252/` should load cleanly in that
+machine's browser with no warning, and the game page's WebSocket connection
+to the same address will succeed for the same reason.
+
+If you'd rather not distribute a certificate at all, the fallback is: on the
+other machine, visit `https://<your-lan-ip>:5252/` directly first and click
+through the browser's security warning ("Advanced" → "Proceed anyway"). That
+creates a per-browser exception good enough for testing, but it has to be
+redone if the certificate or IP changes, and some browsers don't offer the
+click-through option at all.

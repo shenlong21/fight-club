@@ -1,0 +1,10 @@
+{
+  "name": "run-fight-club-driver",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Playwright driver for launching/driving the Fight Club client for agent-driven testing. Not part of the shipped game - see SKILL.md.",
+  "dependencies": {
+    "playwright-core": "^1.61.1"
+  }
+}

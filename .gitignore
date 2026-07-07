@@ -18,10 +18,13 @@ yarn-error.log*
 *.suo
 .vs/
 
-# Local dev certs (never commit private keys) and scratch test folders
+# Local dev certs (never commit private keys, and don't commit throwaway
+# public certs either - they're machine/IP-specific) and scratch test folders
 *.pfx
 *.der
+*.cer
 .scratch/
+.scratch-server.log
 
 # Windows
 Thumbs.db

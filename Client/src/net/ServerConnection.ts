@@ -1,32 +1,33 @@
-import { decode } from "../sim/NetCodec.ts";
+import { decode, WIRE_SIZE } from "../sim/NetCodec.ts";
 import type { MatchState } from "../sim/MatchState.ts";
 
 export type ConnectionStatus = "connecting" | "waiting" | "in-match" | "disconnected";
+export type PlayerSlot = 1 | 2;
 
 /**
  * Thin wrapper around the WebSocket fallback transport - see
  * Server/Networking/WebSocketPlayerConnection.cs for the wire framing this
  * mirrors exactly. Outgoing messages are always a 3-byte PlayerInput frame
- * (sbyte MoveX, sbyte MoveZ, byte Buttons); incoming messages are always a
- * NetCodec.WIRE_SIZE-byte encoded MatchState. There is no envelope beyond
- * that - each side already knows what to expect from the other, matching
- * the same "no framing overhead on the 60Hz path" reasoning as NetCodec
- * itself.
+ * (sbyte MoveX, sbyte MoveZ, byte Buttons). Incoming messages are one of two
+ * shapes, distinguished purely by length since there's no envelope byte:
+ * a 1-byte player-assignment message (see MatchSession.SendPlayerAssignmentsAsync),
+ * sent once per match, or a NetCodec.WIRE_SIZE-byte encoded MatchState,
+ * sent every tick.
  *
- * This client does not predict or reconcile - it renders whatever MatchState
- * the server last broadcast, plain and authoritative. That is a deliberate
- * scope cut for this first vertical slice, not an oversight: local
- * prediction needs the TypeScript sim actually driving a speculative tick
- * plus a rollback/reconciliation strategy, which is follow-up work layered
- * on top of this connection, not a change to it.
+ * This class only decodes and forwards - it doesn't predict or reconcile
+ * anything itself. See Client/src/game/PredictedMatch.ts for that; it
+ * consumes onState/onAssigned to run the local player's own input ahead of
+ * the network round trip.
  */
 export class ServerConnection {
   private socket: WebSocket | null = null;
   private status: ConnectionStatus = "connecting";
   private latestState: MatchState | null = null;
+  private mySlot: PlayerSlot | null = null;
 
   onStatusChange: ((status: ConnectionStatus) => void) | null = null;
   onState: ((state: MatchState) => void) | null = null;
+  onAssigned: ((slot: PlayerSlot) => void) | null = null;
 
   connect(url: string): void {
     const socket = new WebSocket(url);
@@ -38,6 +39,16 @@ export class ServerConnection {
     socket.addEventListener("error", () => this.setStatus("disconnected"));
     socket.addEventListener("message", (event) => {
       const bytes = new Uint8Array(event.data as ArrayBuffer);
+
+      if (bytes.length === 1) {
+        const slot = bytes[0] as PlayerSlot;
+        this.mySlot = slot;
+        this.onAssigned?.(slot);
+        return;
+      }
+
+      if (bytes.length !== WIRE_SIZE) return; // malformed/unexpected - drop rather than throw on an untrusted-ish transport
+
       const state = decode(bytes);
       this.latestState = state;
 
@@ -56,6 +67,10 @@ export class ServerConnection {
 
   getStatus(): ConnectionStatus {
     return this.status;
+  }
+
+  getMySlot(): PlayerSlot | null {
+    return this.mySlot;
   }
 
   getLatestState(): MatchState | null {

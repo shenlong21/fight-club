@@ -77,9 +77,17 @@ function stepPlayer(self: PlayerState, input: PlayerInput, opponentStartPos: Fix
   if (input.has(InputButtons.Block)) {
     self.currentMove = MoveId.Block;
     self.moveFrame = 0;
+  } else if (input.has(InputButtons.Kick)) {
+    // Kick is its own independent attack (MoveId.HeavyPunch's data - damage/
+    // hitbox/knockback - happens to already be the "kick" move by name; it
+    // predates Kick getting its own button and hasn't been renamed to avoid
+    // unnecessary churn). Checked before Punch so holding both resolves to
+    // Kick, not a "Punch+Kick combo" - there is no such combo in this slice.
+    self.currentMove = MoveId.HeavyPunch;
+    self.moveFrame = 0;
+    self.hasCurrentAttackConnected = false;
   } else if (input.has(InputButtons.Punch)) {
-    const heavy = input.has(InputButtons.Kick);
-    self.currentMove = heavy ? MoveId.HeavyPunch : MoveId.LightPunch;
+    self.currentMove = MoveId.LightPunch;
     self.moveFrame = 0;
     self.hasCurrentAttackConnected = false;
   } else if (input.moveX !== 0 || input.moveZ !== 0) {

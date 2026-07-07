@@ -105,15 +105,21 @@ public static class CombatSimulation
             self.CurrentMove = MoveId.Block;
             self.MoveFrame = 0;
         }
+        else if (input.Has(InputButtons.Kick))
+        {
+            // Kick is its own independent attack (MoveId.HeavyPunch's data -
+            // damage/hitbox/knockback - happens to already be the "kick"
+            // move by name; it predates Kick getting its own button and
+            // hasn't been renamed to avoid unnecessary churn). Checked
+            // before Punch so holding both resolves to Kick, not a
+            // "Punch+Kick combo" - there is no such combo in this slice.
+            self.CurrentMove = MoveId.HeavyPunch;
+            self.MoveFrame = 0;
+            self.HasCurrentAttackConnected = false;
+        }
         else if (input.Has(InputButtons.Punch))
         {
-            // Placeholder input scheme for this slice: Punch alone -> light
-            // attack, Punch+Kick together -> heavy attack. Kick alone is
-            // intentionally unmapped/reserved rather than silently aliased to
-            // an existing move, so it doesn't misleadingly play a punch
-            // animation - a real moveset would give it its own entry here.
-            bool heavy = input.Has(InputButtons.Kick);
-            self.CurrentMove = heavy ? MoveId.HeavyPunch : MoveId.LightPunch;
+            self.CurrentMove = MoveId.LightPunch;
             self.MoveFrame = 0;
             self.HasCurrentAttackConnected = false;
         }

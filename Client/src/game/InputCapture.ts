@@ -11,8 +11,9 @@ export interface SampledInput {
  * Keyboard scheme:
  *   Arrow keys - movement (MoveX/MoveZ, digital -1/0/1 - see PlayerInput's
  *   own comment on why this is 8-way digital, not analog stick input).
- *   Z - Punch, X - Kick (held together - matches CombatSimulation's
- *   "Punch alone -> light attack, Punch+Kick together -> heavy attack").
+ *   Z - Punch (arm swing, LightPunch), X - Kick (leg swing, HeavyPunch) -
+ *   independent buttons, not a hold-both combo (see CombatSimulation's
+ *   Kick-checked-before-Punch ordering for what happens if both are held).
  *   C - Block (held).
  *   V - Beast toggle (held - the sim reads this as a live hold, not an
  *   edge-triggered toggle, see PlayerState.IsBeastForm).
@@ -35,7 +36,11 @@ export class InputCapture {
 
   sample(): SampledInput {
     const moveX = this.axis("ArrowLeft", "ArrowRight");
-    const moveZ = this.axis("ArrowUp", "ArrowDown");
+    // ArrowDown is the negative key here (not ArrowUp) - see PlayerInput's Z
+    // axis convention: this makes Down move the fighter toward the camera
+    // and Up move it away, matching what players expect from the arrow keys
+    // rather than the arena's raw +Z/-Z direction.
+    const moveZ = this.axis("ArrowDown", "ArrowUp");
 
     let buttons: InputButtonsFlags = InputButtons.None;
     if (this.held.has("KeyZ")) buttons |= InputButtons.Punch;

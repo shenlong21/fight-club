@@ -25,7 +25,16 @@ builder.WebHost.ConfigureKestrel(options =>
     // endpoints it knows are HTTPS at bind time; configuring protocols via
     // ConfigureEndpointDefaults does not reliably reach endpoints supplied
     // through ASPNETCORE_URLS.
-    options.ListenLocalhost(HttpsPort, listenOptions =>
+    //
+    // ListenAnyIP (not ListenLocalhost) - a client connecting from another
+    // machine on the network arrives on this machine's LAN-facing interface,
+    // not loopback. ListenLocalhost silently refuses those. Note this still
+    // doesn't make a remote client's browser trust the cert - see README's
+    // certificate section for why a LAN client needs an extra step the first
+    // time (the standard dev cert is issued for "localhost" only, so a
+    // connection to a LAN IP/hostname fails TLS hostname validation until
+    // the browser is told to trust it for that address too).
+    options.ListenAnyIP(HttpsPort, listenOptions =>
     {
         // Optional override: a real WebTransport client validates a
         // self-signed cert via `serverCertificateHashes` (a pinned SHA-256 of
@@ -59,7 +68,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        // AllowAnyOrigin, not a fixed "http://localhost:5173" - a client on
+        // the LAN loads the Vite dev server from the host's network
+        // IP/hostname (a different origin), and Vite itself may pick a
+        // fallback port if 5173 is busy. This is fine for local/LAN dev;
+        // tighten it before this is ever exposed beyond a trusted network.
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
