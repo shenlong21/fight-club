@@ -143,6 +143,23 @@ const hash = createHash("sha256").update(readFileSync("./wt-dev-cert.der")).dige
 
 ## LAN testing (playing from a second machine)
 
+> **IP changed since last time?** If this was already working and now gives a
+> `WebSocket connection to '...' failed` in the browser console with nothing
+> else different, your router almost certainly handed this machine a new
+> DHCP IP and the LAN cert (below) still only lists the old one. Fast path:
+>
+> ```ps1
+> powershell -File Server\regenerate-lan-cert.ps1
+> ```
+>
+> Then restart the server with the command it prints, and (if you'd imported
+> the old `.cer` on the other machine rather than using the click-through
+> workaround) re-copy and re-import the regenerated `lan-dev-cert.cer` there
+> too - the old one no longer matches. Whole thing takes under a minute; the
+> rest of this section is the manual/first-time version of what that script
+> automates, useful if you want to understand what it's doing or need to do
+> it on macOS/Linux (the script is Windows/PowerShell-only).
+
 Three separate things have to be true for a second machine on your network to
 connect, and it's easy to fix only one and still see a failure:
 

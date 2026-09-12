@@ -113,13 +113,23 @@ public static class CombatSimulation
             // hasn't been renamed to avoid unnecessary churn). Checked
             // before Punch so holding both resolves to Kick, not a
             // "Punch+Kick combo" - there is no such combo in this slice.
-            self.CurrentMove = MoveId.HeavyPunch;
+            //
+            // A held direction picks a variant instead of the neutral kick -
+            // MoveZ (up/down) takes priority over MoveX (side) if somehow
+            // both are held, matching Punch's own priority order below.
+            self.CurrentMove = input.MoveZ > 0 ? MoveId.UpKick
+                : input.MoveZ < 0 ? MoveId.DownKick
+                : input.MoveX != 0 ? MoveId.SideKick
+                : MoveId.HeavyPunch;
             self.MoveFrame = 0;
             self.HasCurrentAttackConnected = false;
         }
         else if (input.Has(InputButtons.Punch))
         {
-            self.CurrentMove = MoveId.LightPunch;
+            self.CurrentMove = input.MoveZ > 0 ? MoveId.UpPunch
+                : input.MoveZ < 0 ? MoveId.DownPunch
+                : input.MoveX != 0 ? MoveId.SidePunch
+                : MoveId.LightPunch;
             self.MoveFrame = 0;
             self.HasCurrentAttackConnected = false;
         }

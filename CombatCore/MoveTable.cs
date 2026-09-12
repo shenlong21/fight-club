@@ -92,6 +92,143 @@ public static class MoveTable
                 knockback: FixedVector3.FromFloats(4.0f, 0f, 0f)),
         };
 
+        // Directional attack variants - triggered by holding a direction
+        // while Punch/Kick is pressed (see CombatSimulation.StepPlayer).
+        // Frame counts/damage are a first pass, not a tuned balance target:
+        // roughly, "up" variants are quick with modest reach, "down"
+        // variants are fast and low-damage, "side" variants are the
+        // slowest/heaviest-hitting of each pair. Y offsets on the hitboxes
+        // are semantically correct (higher for "up," lower for "down") even
+        // though they don't currently change hit/miss against a single
+        // whole-body StandingHurtbox - only matters if hurtboxes are ever
+        // split high/low.
+
+        // Startup 0-4 (5f), active 5-6 (2f), recovery 7-13 (7f) = 14f total.
+        table[MoveId.UpPunch] = new MoveDefinition
+        {
+            Id = MoveId.UpPunch,
+            TotalFrames = 14,
+            IsCancelableByMovement = false,
+            IsAttack = true,
+            Hurtboxes = new[] { StandingHurtbox(13) },
+            Hitboxes = new[]
+            {
+                new FrameBox(5, 6,
+                    FixedVector3.FromFloats(0.55f, 1.6f, 0f),
+                    FixedVector3.FromFloats(0.30f, 0.25f, 0.20f)),
+            },
+            HitProperties = new HitProperties(
+                damage: 8,
+                hitstunFrames: 14,
+                blockstunFrames: 7,
+                knockback: FixedVector3.FromFloats(2.0f, 0f, 0f)),
+        };
+
+        // Startup 0-2 (3f), active 3-3 (1f), recovery 4-9 (6f) = 10f total.
+        table[MoveId.DownPunch] = new MoveDefinition
+        {
+            Id = MoveId.DownPunch,
+            TotalFrames = 10,
+            IsCancelableByMovement = false,
+            IsAttack = true,
+            Hurtboxes = new[] { StandingHurtbox(9) },
+            Hitboxes = new[]
+            {
+                new FrameBox(3, 3,
+                    FixedVector3.FromFloats(0.50f, 0.6f, 0f),
+                    FixedVector3.FromFloats(0.30f, 0.20f, 0.20f)),
+            },
+            HitProperties = new HitProperties(
+                damage: 5,
+                hitstunFrames: 9,
+                blockstunFrames: 4,
+                knockback: FixedVector3.FromFloats(1.0f, 0f, 0f)),
+        };
+
+        // Startup 0-5 (6f), active 6-7 (2f), recovery 8-15 (8f) = 16f total.
+        table[MoveId.SidePunch] = new MoveDefinition
+        {
+            Id = MoveId.SidePunch,
+            TotalFrames = 16,
+            IsCancelableByMovement = false,
+            IsAttack = true,
+            Hurtboxes = new[] { StandingHurtbox(15) },
+            Hitboxes = new[]
+            {
+                new FrameBox(6, 7,
+                    FixedVector3.FromFloats(0.60f, 1.1f, 0f),
+                    FixedVector3.FromFloats(0.35f, 0.25f, 0.25f)),
+            },
+            HitProperties = new HitProperties(
+                damage: 9,
+                hitstunFrames: 15,
+                blockstunFrames: 8,
+                knockback: FixedVector3.FromFloats(2.5f, 0f, 0f)),
+        };
+
+        // Startup 0-7 (8f), active 8-10 (3f), recovery 11-19 (9f) = 20f total.
+        table[MoveId.UpKick] = new MoveDefinition
+        {
+            Id = MoveId.UpKick,
+            TotalFrames = 20,
+            IsCancelableByMovement = false,
+            IsAttack = true,
+            Hurtboxes = new[] { StandingHurtbox(19) },
+            Hitboxes = new[]
+            {
+                new FrameBox(8, 10,
+                    FixedVector3.FromFloats(0.80f, 1.7f, 0f),
+                    FixedVector3.FromFloats(0.35f, 0.30f, 0.25f)),
+            },
+            HitProperties = new HitProperties(
+                damage: 14,
+                hitstunFrames: 18,
+                blockstunFrames: 10,
+                knockback: FixedVector3.FromFloats(3.0f, 0f, 0f)),
+        };
+
+        // Startup 0-4 (5f), active 5-6 (2f), recovery 7-15 (9f) = 16f total.
+        table[MoveId.DownKick] = new MoveDefinition
+        {
+            Id = MoveId.DownKick,
+            TotalFrames = 16,
+            IsCancelableByMovement = false,
+            IsAttack = true,
+            Hurtboxes = new[] { StandingHurtbox(15) },
+            Hitboxes = new[]
+            {
+                new FrameBox(5, 6,
+                    FixedVector3.FromFloats(0.75f, 0.3f, 0f),
+                    FixedVector3.FromFloats(0.40f, 0.20f, 0.25f)),
+            },
+            HitProperties = new HitProperties(
+                damage: 10,
+                hitstunFrames: 13,
+                blockstunFrames: 6,
+                knockback: FixedVector3.FromFloats(2.0f, 0f, 0f)),
+        };
+
+        // Startup 0-8 (9f), active 9-11 (3f), recovery 12-21 (10f) = 22f total.
+        table[MoveId.SideKick] = new MoveDefinition
+        {
+            Id = MoveId.SideKick,
+            TotalFrames = 22,
+            IsCancelableByMovement = false,
+            IsAttack = true,
+            Hurtboxes = new[] { StandingHurtbox(21) },
+            Hitboxes = new[]
+            {
+                new FrameBox(9, 11,
+                    FixedVector3.FromFloats(0.90f, 1.2f, 0f),
+                    FixedVector3.FromFloats(0.40f, 0.30f, 0.30f)),
+            },
+            HitProperties = new HitProperties(
+                damage: 16,
+                hitstunFrames: 20,
+                blockstunFrames: 11,
+                knockback: FixedVector3.FromFloats(4.0f, 0f, 0f)),
+        };
+
         table[MoveId.Block] = new MoveDefinition
         {
             Id = MoveId.Block,

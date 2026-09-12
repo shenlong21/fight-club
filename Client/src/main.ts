@@ -181,7 +181,11 @@ engine.runRenderLoop(() => {
     }
 
     if (state) {
-        combatCamera.update(state.player1.position.x.toFloat(), state.player2.position.x.toFloat(), shakeOffsetX, shakeOffsetY);
+        // Framed on the fighters' eased render position (FighterView), not
+        // the raw sim position - otherwise the camera would re-frame
+        // instantly on a knockback while the character mesh is still easing
+        // toward it, visibly detaching the two.
+        combatCamera.update(fighterView1.getRenderedX(), fighterView2.getRenderedX(), shakeOffsetX, shakeOffsetY);
     }
 
     scene.render();

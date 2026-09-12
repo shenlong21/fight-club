@@ -11,6 +11,16 @@ public enum MoveId : byte
     Hitstun = 6,
     Blockstun = 7,
     KnockedOut = 8,
+
+    // Directional attack variants - appended rather than interleaved so the
+    // existing values above (serialized as a raw byte on the wire, see
+    // NetCodec.cs) never change meaning for anything already deployed.
+    UpPunch = 9,
+    DownPunch = 10,
+    SidePunch = 11,
+    UpKick = 12,
+    DownKick = 13,
+    SideKick = 14,
 }
 
 /// <summary>

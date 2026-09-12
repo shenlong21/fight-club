@@ -83,11 +83,23 @@ function stepPlayer(self: PlayerState, input: PlayerInput, opponentStartPos: Fix
     // predates Kick getting its own button and hasn't been renamed to avoid
     // unnecessary churn). Checked before Punch so holding both resolves to
     // Kick, not a "Punch+Kick combo" - there is no such combo in this slice.
-    self.currentMove = MoveId.HeavyPunch;
+    //
+    // A held direction picks a variant instead of the neutral kick - moveZ
+    // (up/down) takes priority over moveX (side) if somehow both are held,
+    // matching Punch's own priority order below.
+    self.currentMove =
+      input.moveZ > 0 ? MoveId.UpKick :
+      input.moveZ < 0 ? MoveId.DownKick :
+      input.moveX !== 0 ? MoveId.SideKick :
+      MoveId.HeavyPunch;
     self.moveFrame = 0;
     self.hasCurrentAttackConnected = false;
   } else if (input.has(InputButtons.Punch)) {
-    self.currentMove = MoveId.LightPunch;
+    self.currentMove =
+      input.moveZ > 0 ? MoveId.UpPunch :
+      input.moveZ < 0 ? MoveId.DownPunch :
+      input.moveX !== 0 ? MoveId.SidePunch :
+      MoveId.LightPunch;
     self.moveFrame = 0;
     self.hasCurrentAttackConnected = false;
   } else if (input.moveX !== 0 || input.moveZ !== 0) {

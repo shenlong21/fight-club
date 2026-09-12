@@ -47,6 +47,18 @@ this file is just "what's done, what's tested, what's next."
     Beast form (hold - functional in the sim as a 2x damage multiplier, but
     deliberately not a current focus: no visual transformation, no
     meter/cooldown - see `MoveTable.cs`'s own comment on this).
+  - **Directional attack variants**: holding Up/Down/Side while pressing
+    Punch or Kick selects one of 6 additional moves (`UpPunch`, `DownPunch`,
+    `SidePunch`, `UpKick`, `DownKick`, `SideKick` - `MoveId` 9-14) instead of
+    the neutral LightPunch/HeavyPunch, each with its own `MoveTable`
+    frame data (damage/hitstun/blockstun/knockback/hitbox) and mapped to a
+    distinct Mixamo clip in `FighterView.ts`. Added identically to
+    `CombatCore/CombatSimulation.cs` and `Client/src/sim/CombatSimulation.ts`
+    in the same edit pass, so parity never lapsed. Live-verified: all 6
+    trigger the exact correct `MoveId` (checked via the real decoded
+    `MatchState`, not just visually), no console errors, existing
+    golden-replay hashes for the neutral moves unchanged (the new
+    direction-check is a no-op when no direction is held).
   - HUD: plain HTML/CSS health bars + connection status line.
   - **Live-tested end-to-end** with two independent browser clients (the
     `run-fight-club` project skill's Playwright driver): both connect,
@@ -67,18 +79,28 @@ this file is just "what's done, what's tested, what's next."
       scale (consistent across the base model AND every source FBX - a
       Mixamo/Blender-pipeline unit convention, not a bug) - corrected via a
       single scale factor in `createFighter.ts`.
-  - **Animation playback is frame-locked to game state**
-    (`Client/src/game/FighterView.ts`): each `AnimationGroup`'s playhead is
-    set directly via `goToFrame(moveFrame/totalFrames * clipLength)` for
-    attacks/hitstun - the same "recompute fresh every frame from
-    (currentMove, moveFrame), don't let it run on its own clock" reasoning
-    the old `CombatPose.ts` used, now applied to real clips instead of
-    hand-computed joint rotations. Idle/walk/block use normal looped
-    playback instead (no hit window to keep frame-locked, natural looping
-    motion matters more than exact sync there). Live-verified via
-    screenshots: guard stance, punch, and kick (leg clearly raised
-    mid-kick) all visually confirmed correct, health drops on the expected
-    frame, no console errors.
+  - **Animation playback is wall-clock "timed," not frame-locked**
+    (`Client/src/game/FighterView.ts`): the first version scrubbed each
+    `AnimationGroup`'s playhead directly from `moveFrame/totalFrames`,
+    matching the real (fast, ~200-400ms) game-frame window - but Mixamo
+    mocap clips run a couple of seconds at their native pace, so this
+    blurred through the whole clip many times faster than intended AND cut
+    off wherever the game's frame count landed rather than wherever the
+    motion looked finished ("too fast and half cut down"). Fixed by
+    decoupling: attack/reaction clips now play over their own tunable
+    `durationMs` and are allowed to keep playing to a natural completion
+    even after the game's own attack window has already ended - getting hit
+    still interrupts instantly regardless (`INTERRUPT_MOVES`), so it never
+    reads as unresponsive. This means the animation is no longer
+    frame-locked to exactly when the hitbox is active (a real trade-off,
+    unlike the old `CombatPose.ts` procedural poses) - only the *visual*
+    changed; hit resolution still runs on the real fast `moveFrame` data,
+    untouched (re-verified: damage still applies on the correct tick).
+    Also fixed: fighters were facing away from each other (the model's rest
+    pose faces opposite to what the old placeholder-rig formula assumed) -
+    one `+PI` offset. Idle/walk/block still use normal looped playback (no
+    hit window to keep synced there). Live-verified via screenshots at each
+    stage.
   - **Hitstop + camera shake** on impact (`main.ts`), scaled by how much
     hitstun/blockstun the hit actually carries - presentation-only (the
     server tick and local prediction keep running at full speed
@@ -124,10 +146,17 @@ this file is just "what's done, what's tested, what's next."
 - **Both fighters use the identical model/skin** - no P1/P2 palette
   distinction beyond the HUD's red/blue health bars and facing direction.
 - **Animation-to-move mapping is a first pass**, picked by name/vibe from
-  the 36 available clips (`Cross Punch` for LightPunch, `Roundhouse Kick`
-  for HeavyPunch/Kick, `Body Block` for Block/Blockstun, `Hit Reaction` for
-  Hitstun/KnockedOut) - swap any of these in `FighterView.ts`'s
-  `CLIP_FOR_MOVE` table if a different clip reads better.
+  the 36 available clips, not visually auditioned one-by-one - swap any of
+  these in `FighterView.ts`'s `CLIP_FOR_MOVE` table (clip name + durationMs)
+  if a different clip or pacing reads better. Current picks: `Cross Punch`
+  (LightPunch), `Roundhouse Kick` (HeavyPunch/neutral Kick), `Elbow Punch`
+  (UpPunch), `Punching(1)` (DownPunch), `Hook Punch` (SidePunch), `Flying
+  Kick` (UpKick), `Kicking(3)` (DownKick), `Side Kick` (SideKick), `Body
+  Block` (Block/Blockstun), `Hit Reaction` (Hitstun/KnockedOut).
+- **Directional move balance is a first pass, not tuned.** Damage/hitstun/
+  knockback for the 6 new moves were picked for rough variety (up = quick
+  modest reach, down = fast low-damage, side = slowest/heaviest of each
+  pair), not playtested for fairness.
 
 ## Suggested next steps (not yet started)
 
